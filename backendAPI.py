@@ -3,6 +3,7 @@ from flask_restful import Resource, Api
 from flask_mysqldb import MySQL
 from getpass import getpass
 from datetime import datetime, timedelta
+import string, random
 
 app = Flask(__name__)
 api = Api(app)
@@ -21,7 +22,7 @@ class Authenticate(Resource):
         if res is not None:
             access_time = datetime.now()
             query = "UPDATE Auth SET Expiry='{}' WHERE CODE='{}'".format(
-                "{:%Y-%m-%d %H:%M:%s}".format(access_time + timedelta(hours=1)),
+                "{:%Y-%m-%d %H:%M:%S}".format(access_time + timedelta(hours=1)),
                 auth
             )
             if res['Expiry'] < access_time:
@@ -37,7 +38,7 @@ class Authenticate(Resource):
             cursor = mysql.connection.cursor()
             access_time = datetime.now()
             print('{:%Y%M%S%d%H%m}'.format(access_time))
-            key = '{:.25}'.format(str(hash(int('{:%Y%M%S%d%H%m}'.format(access_time))) ** 2))
+            key = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(50))
             cursor.execute("INSERT INTO Auth(CODE,Expiry) VALUES ('{}','{}')".format(
                 key,
                 "{:%Y-%m-%d %H:%M:%S}".format(access_time + timedelta(hours=1))
