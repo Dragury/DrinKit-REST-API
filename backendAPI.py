@@ -38,10 +38,10 @@ def is_authenticated(auth):
 
 
 class Authenticate(Resource):
-    def get(self, auth=None):
+    def get(self, auth):
         return jsonify(is_authenticated(auth))
 
-    def post(self, auth=None):
+    def post(self):
         if request.form['USER'] == app.config['MYSQL_USER'] and request.form['PASS'] == app.config['MYSQL_PASSWORD']:
             cursor = mysql.connection.cursor()
             access_time = datetime.now()
@@ -52,7 +52,17 @@ class Authenticate(Resource):
             ])
             mysql.connection.commit()
             return jsonify(key)
-        return None, 403
+        return jsonify(None), 403
+
+    def delete(self, auth):
+        cursor = mysql.connection.cursor()
+        cursor.execute(
+            "DELETE FROM Auth WHERE CODE=%s",
+            [
+                auth
+            ]
+        )
+        return None, 200
 
 
 api.add_resource(Authenticate, *["/auth", "/auth/<string:auth>"])
@@ -139,8 +149,50 @@ class Drink(Resource):
                     "SELECT * FROM Drinks ORDER BY ID DESC LIMIT 1"
                 )
                 return jsonify(cursor.fetchone())
-        else:
-            return jsonify(None), 403
+        return jsonify(None), 403
+
+    def delete(self, id):
+        auth = request.form['AUTH']
+        if is_authenticated(auth):
+            cursor = mysql.connection.cursor()
+            cursor.execute(
+                "DELETE FROM Drink_Equipment WHERE DrinkID=%s",
+                [
+                    id
+                ]
+            )
+            cursor.execute(
+                "DELETE FROM Drink_Flags WHERE DrinkID=%s",
+                [
+                    id
+                ]
+            )
+            cursor.execute(
+                "DELETE FROM Drink_Ingredients WHERE DrinkID=%s",
+                [
+                    id
+                ]
+            )
+            cursor.execute(
+                "DELETE FROM Drink_Skills WHERE DrinkID=%s",
+                [
+                    id
+                ]
+            )
+            cursor.execute(
+                "DELETE FROM Drink_Steps WHERE DrinkID=%s",
+                [
+                    id
+                ]
+            )
+            cursor.execute(
+                "DELETE FROM Drinks WHERE ID=%s",
+                [
+                    id
+                ]
+            )
+            return None, 200
+        return None, 403
 
 
 api.add_resource(Drink, *["/drink", "/drink/<int:id>"])
@@ -161,17 +213,72 @@ class Equipment(Resource):
         cursor = mysql.connection.cursor()
         if drinkID is None:
             cursor.execute("SELECT * FROM Equipment")
-            return jsonify(cursor.fetchall())
         else:
             cursor.execute(
                 "SELECT ID,Text FROM Equipment JOIN Drink_Equipment ON Drink_Equipment.EquipmentID=Equipment.ID WHERE "
                 "Drink_Equipment.DrinkID=%s",
                 [drinkID]
             )
-            return jsonify(cursor.fetchall())
+        return jsonify(cursor.fetchall())
+
+    def post(self):
+        auth = request.form['AUTH']
+        if is_authenticated(auth):
+            cursor = mysql.connection.cursor()
+            text = request.form['TEXT']
+            cursor.execute(
+                "INSERT INTO Equipment(Text) VALUES (%s)",
+                [
+                    text
+                ]
+            )
+            cursor.execute(
+                "SELECT * FROM Equipment ORDER BY ID DESC LIMIT 1"
+            )
+            return jsonify(cursor.fetchone())
+        return jsonify(None), 403
+
+    def put(self, equipmentID):
+        auth = request.form['AUTH']
+        if is_authenticated(auth):
+            cursor = mysql.connection.cursor()
+            text = request.form['TEXT']
+            cursor.execute(
+                "UPDATE Equipment SET Text=%s WHERE ID=%s",
+                [
+                    text,
+                    equipmentID
+                ]
+            )
+            cursor.execute(
+                "SELECT * FROM Equipment WHERE ID=%s",
+                [
+                    equipmentID
+                ]
+            )
+            return jsonify(cursor.fetchone())
+        return jsonify(None), 403
+
+    def delete(self, equipmentID):
+        auth = request.form['AUTH']
+        if is_authenticated(auth):
+            cursor = mysql.connection.cursor()
+            cursor.execute(
+                "DELETE FROM Drink_Equipment WHERE EquipmentID=%s",
+                [
+                    equipmentID
+                ]
+            )
+            cursor.execute(
+                "DELETE FROM Equipment WHERE ID=%s",
+                [
+                    equipmentID
+                ]
+            )
+        return None, 403
 
 
-api.add_resource(Equipment, *["/equipment", "/drink/equipment/<int:drinkID>"])
+api.add_resource(Equipment, *["/equipment", "/drink/equipment/<int:drinkID>", "/equipment/<int:equipmentID>"])
 
 
 class Flags(Resource):
@@ -199,9 +306,10 @@ class Flags(Resource):
                 ]
             )
             return jsonify(cursor.fetchall())
-    def post(self, drinkID=None, drinkType=None):
+
+    def post(self):
         auth = request.form['AUTH']
-        if is_authenticated(auth) == auth:
+        if is_authenticated(auth):
             cursor = mysql.connection.cursor()
             text = request.form['TEXT']
             cursor.execute(
@@ -216,7 +324,48 @@ class Flags(Resource):
             return jsonify(cursor.fetchone())
         return jsonify(None), 403
 
+    def put(self, flagID):
+        auth = request.form['AUTH']
+        if is_authenticated(auth) == auth:
+            cursor = mysql.connection.cursor()
+            text = request.form['TEXT']
+            cursor.execute(
+                "UPDATE Flags SET Text=%s WHERE ID=%s",
+                [
+                    text,
+                    flagID
+                ]
+            )
+            cursor.execute(
+                "SELECT * FROM Flags WHERE ID=%s",
+                [
+                    flagID
+                ]
+            )
+            return jsonify(cursor.fetchone())
+        return jsonify(None), 403
 
-api.add_resource(Flags, *["/flag", "/drink/<int:drinkID>/flag", "/drink/type/<int:drinkType>/flag"])
+    def delete(self, flagID):
+        auth = request.form['AUTH']
+        if is_authenticated(auth):
+            cursor = mysql.connection.cursor()
+            cursor.execute(
+                "DELETE FROM Drink_Flags WHERE FlagID=%s",
+                [
+                    flagID
+                ]
+            )
+            cursor.execute(
+                "DELETE FROM Flags WHERE ID=%s",
+                [
+                    flagID
+                ]
+            )
+            return None, 200
+        return None, 403
+
+
+api.add_resource(Flags,
+                 *["/flag", "/drink/<int:drinkID>/flag", "/drink/type/<int:drinkType>/flag", "/flag/<int:flagID>"])
 if __name__ == "__main__":
     app.run(port=1997, debug=True)
