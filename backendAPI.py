@@ -1,16 +1,19 @@
-from flask import Flask, jsonify, request
-from flask_restful import Resource, Api
-from flask_mysqldb import MySQL
+import random
+import string
+import sys
 from datetime import datetime, timedelta
-import string, random, sys
+
+from flask import Flask, jsonify, request
+from flask_mysqldb import MySQL
+from flask_restful import Resource, Api
 
 app = Flask(__name__)
 api = Api(app)
-app.config['MYSQL_DB'] = "drinKit"
-app.config['MYSQL_HOST'] = "127.0.0.1"
-app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
-app.config['MYSQL_USER'] = sys.argv[1]
-app.config['MYSQL_PASSWORD'] = sys.argv[2]
+app.config["MYSQL_DB"] = "drinKit"
+app.config["MYSQL_HOST"] = "127.0.0.1"
+app.config["MYSQL_CURSORCLASS"] = "DictCursor"
+app.config["MYSQL_USER"] = sys.argv[1]
+app.config["MYSQL_PASSWORD"] = sys.argv[2]
 mysql = MySQL(app)
 
 
@@ -22,7 +25,7 @@ def is_authenticated(auth):
     res = cursor.fetchone()
     if res is not None:
         access_time = datetime.now()
-        if res['Expiry'] < access_time:
+        if res["Expiry"] < access_time:
             query = "DELETE FROM Auth WHERE CODE=%s"
             cursor.execute(query, [auth])
             auth = None
@@ -37,15 +40,16 @@ def is_authenticated(auth):
     return None
 
 
+# noinspection PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic
 class Authenticate(Resource):
     def get(self, auth):
         return jsonify(is_authenticated(auth))
 
     def post(self):
-        if request.form['USER'] == app.config['MYSQL_USER'] and request.form['PASS'] == app.config['MYSQL_PASSWORD']:
+        if request.form["USER"] == app.config["MYSQL_USER"] and request.form["PASS"] == app.config["MYSQL_PASSWORD"]:
             cursor = mysql.connection.cursor()
             access_time = datetime.now()
-            key = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(50))
+            key = "".join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(50))
             cursor.execute("INSERT INTO Auth(CODE,Expiry) VALUES (%s,%s)", [
                 key,
                 "{:%Y-%m-%d %H:%M:%S}".format(access_time + timedelta(hours=1))
@@ -62,12 +66,15 @@ class Authenticate(Resource):
                 auth
             ]
         )
+        mysql.connection.commit()
         return None, 200
 
 
+# noinspection PyTypeChecker
 api.add_resource(Authenticate, *["/auth", "/auth/<string:auth>"])
 
 
+# noinspection PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic
 class Drink(Resource):
     def get(self):
         cursor = mysql.connection.cursor()
@@ -75,27 +82,28 @@ class Drink(Resource):
         res = cursor.fetchall()
         return jsonify(res)
 
-    def put(self, id):
+    def put(self, classid):
         auth = request.form['AUTH']
         if is_authenticated(auth) == auth:
             cursor = mysql.connection.cursor()
             name = request.form['NAME']
             desc = request.form['DESCRIPTION']
             flav = request.form['FLAVOURTEXT']
-            typeID = int(request.form['TYPEID'])
+            typeid = int(request.form['TYPEID'])
             cursor.execute(
                 "UPDATE Drinks SET Name=%s,Description=%s,FlavourText=%s,DrinkTypeID=%s WHERE ID=%s",
                 [
                     name,
                     desc,
                     flav,
-                    typeID,
-                    id
+                    typeid,
+                    classid
                 ]
             )
             cursor.execute(
                 "SELECT * FROM Drinks"
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return jsonify(None), 403
 
@@ -106,69 +114,72 @@ class Drink(Resource):
             name = request.form['NAME']
             desc = request.form['DESCRIPTION']
             flav = request.form['FLAVOURTEXT']
-            typeID = int(request.form['TYPEID'])
+            typeid = int(request.form['TYPEID'])
             cursor.execute(
                 "INSERT INTO Drinks(Name,Description,FlavourText,DrinkTypeID) VALUES (%s,%s,%s,%s)",
                 [
                     name,
                     desc,
                     flav,
-                    typeID
+                    typeid
                 ]
             )
             cursor.execute(
                 "SELECT * FROM Drinks"
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return jsonify(None), 403
 
-    def delete(self, id):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
+    def delete(self, classid):
+        if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
             cursor.execute(
                 "DELETE FROM Drink_Equipment WHERE DrinkID=%s",
                 [
-                    id
+                    classid
                 ]
             )
             cursor.execute(
                 "DELETE FROM Drink_Flags WHERE DrinkID=%s",
                 [
-                    id
+                    classid
                 ]
             )
             cursor.execute(
                 "DELETE FROM Drink_Ingredients WHERE DrinkID=%s",
                 [
-                    id
+                    classid
                 ]
             )
             cursor.execute(
                 "DELETE FROM Drink_Skills WHERE DrinkID=%s",
                 [
-                    id
+                    classid
                 ]
             )
             cursor.execute(
                 "DELETE FROM Drink_Steps WHERE DrinkID=%s",
                 [
-                    id
+                    classid
                 ]
             )
             cursor.execute(
                 "DELETE FROM Drinks WHERE ID=%s",
                 [
-                    id
+                    classid
                 ]
             )
+            mysql.connection.commit()
             return None, 200
         return None, 403
 
 
-api.add_resource(Drink, *["/drink", "/drink/<int:id>"])
+# noinspection PyTypeChecker
+api.add_resource(Drink, *["/drink", "/drink/<int:classid>"])
 
 
+# noinspection PyMethodMayBeStatic
 class Type(Resource):
     def get(self):
         cursor = mysql.connection.cursor()
@@ -176,9 +187,11 @@ class Type(Resource):
         return jsonify(cursor.fetchall())
 
 
+# noinspection PyTypeChecker
 api.add_resource(Type, "/type")
 
 
+# noinspection PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic
 class Equipment(Resource):
     def get(self):
         cursor = mysql.connection.cursor()
@@ -186,8 +199,7 @@ class Equipment(Resource):
         return jsonify(cursor.fetchall())
 
     def post(self):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
+        if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
             text = request.form['TEXT']
             cursor.execute(
@@ -199,111 +211,116 @@ class Equipment(Resource):
             cursor.execute(
                 "SELECT * FROM Equipment"
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return jsonify(None), 403
 
-    def put(self, equipmentID):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
+    def put(self, equipmentid):
+        if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
             text = request.form['TEXT']
             cursor.execute(
                 "UPDATE Equipment SET Text=%s WHERE ID=%s",
                 [
                     text,
-                    equipmentID
+                    equipmentid
                 ]
             )
             cursor.execute(
                 "SELECT * FROM Equipment"
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return jsonify(None), 403
 
-    def delete(self, equipmentID):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
+    def delete(self, equipmentid):
+        if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
             cursor.execute(
                 "DELETE FROM Drink_Equipment WHERE EquipmentID=%s",
                 [
-                    equipmentID
+                    equipmentid
                 ]
             )
             cursor.execute(
                 "DELETE FROM Equipment WHERE ID=%s",
                 [
-                    equipmentID
+                    equipmentid
                 ]
             )
+            mysql.connection.commit()
             return None
         return None, 403
 
 
-api.add_resource(Equipment, *["/equipment", "/equipment/<int:equipmentID>"])
+# noinspection PyTypeChecker
+api.add_resource(Equipment, *["/equipment", "/equipment/<int:equipmentid>"])
 
 
+# noinspection PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic
 class DrinkEquipment(Resource):
-    def get(self, id):
+    def get(self, classid):
         cursor = mysql.connection.cursor()
         cursor.execute(
             "SELECT ID, Text FROM Equipment JOIN Drink_Equipment ON EquipmentID=ID WHERE DrinkID=%s",
             [
-                id
+                classid
             ]
         )
         return jsonify(cursor.fetchall())
 
-    def post(self, id):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
-            equipmentID = request.form['EQUIPMENTID']
+    def post(self, classid):
+        if is_authenticated(request.form['AUTH']):
+            equipmentid = request.form['EQUIPMENTID']
             cursor = mysql.connection.cursor()
             cursor.execute(
                 "INSERT INTO Drink_Equipment(DrinkID, EquipmentID) VALUES (%s, %s)",
                 [
-                    id,
-                    equipmentID
+                    classid,
+                    equipmentid
                 ]
             )
             cursor.execute(
                 "SELECT ID, Text FROM Equipment JOIN Drink_Equipment ON EquipmentID=ID WHERE DrinkID=%s",
                 [
-                    id
+                    classid
                 ]
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return None, 403
 
-    def delete(self, id):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
-            equipmentID = request.form['EQUIPMENTID']
+    def delete(self, classid, equipmentid):
+        if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
             cursor.execute(
                 "DELETE FROM Drink_Equipment WHERE DrinkID=%s AND EquipmentID=%s",
                 [
-                    id,
-                    equipmentID
+                    classid,
+                    equipmentid
                 ]
             )
             cursor.execute(
                 "SELECT ID, Text FROM Equipment JOIN Drink_Equipment ON EquipmentID=ID WHERE DrinkID=%s",
                 [
-                    id
+                    classid
                 ]
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return None, 403
 
 
-api.add_resource(DrinkEquipment, *["/drink/<int:id>/equipment"])
+# noinspection PyTypeChecker
+api.add_resource(DrinkEquipment, *["/drink/<int:classid>/equipment",
+                                   "/drink/<int:classid>/equipment/<int:equipmentid>"])
 
 
+# noinspection PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic
 class Flag(Resource):
-    def get(self, typeID=None):
+    def get(self, typeid=None):
         cursor = mysql.connection.cursor()
-        if typeID is None:
+        if typeid is None:
             cursor.execute(
                 "SELECT * FROM Flags"
             )
@@ -313,14 +330,13 @@ class Flag(Resource):
                 "SELECT DISTINCT Flags.ID, Flags.Text FROM Flags JOIN Drink_Flags ON FlagID=Flags.ID"
                 " JOIN Drinks ON Drinks.ID=DrinkID WHERE DrinkTypeID=%s",
                 [
-                    typeID
+                    typeid
                 ]
             )
             return jsonify(cursor.fetchall())
 
     def post(self):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
+        if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
             text = request.form['TEXT']
             cursor.execute(
@@ -332,10 +348,11 @@ class Flag(Resource):
             cursor.execute(
                 "SELECT * FROM Flags"
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchone())
         return jsonify(None), 403
 
-    def put(self, flagID):
+    def put(self, flagid):
         auth = request.form['AUTH']
         if is_authenticated(auth) == auth:
             cursor = mysql.connection.cursor()
@@ -344,96 +361,101 @@ class Flag(Resource):
                 "UPDATE Flags SET Text=%s WHERE ID=%s",
                 [
                     text,
-                    flagID
+                    flagid
                 ]
             )
             cursor.execute(
                 "SELECT * FROM Flags"
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchone())
         return jsonify(None), 403
 
-    def delete(self, flagID):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
+    def delete(self, flagid):
+        if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
             cursor.execute(
                 "DELETE FROM Drink_Flags WHERE FlagID=%s",
                 [
-                    flagID
+                    flagid
                 ]
             )
             cursor.execute(
                 "DELETE FROM Flags WHERE ID=%s",
                 [
-                    flagID
+                    flagid
                 ]
             )
+            mysql.connection.commit()
             return None, 200
         return None, 403
 
 
+# noinspection PyTypeChecker
 api.add_resource(Flag,
-                 *["/flag", "/type/flag/<int:typeID>", "/flag/<int:flagID>"])
+                 *["/flag", "/type/flag/<int:typeid>", "/flag/<int:flagid>"])
 
 
+# noinspection PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic
 class DrinkFlag(Resource):
-    def get(self, id):
+    def get(self, classid):
         cursor = mysql.connection.cursor()
         cursor.execute(
             "SELECT ID, Text FROM Flags JOIN Drink_Flags WHERE DrinkID=%s",
             [
-                id
+                classid
             ]
         )
         return jsonify(cursor.fetchall())
 
-    def post(self, id):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
+    def post(self, classid):
+        if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
-            flagID = request.form['FLAGID']
+            flagid = request.form['FLAGID']
             cursor.execute(
                 "INSERT INTO Drink_Flags(DrinkID, FlagID) VALUES (%s,%s)",
                 [
-                    id,
-                    flagID
+                    classid,
+                    flagid
                 ]
             )
             cursor.execute(
                 "SELECT ID, Text FROM Flags JOIN Drink_Flags ON FlagID=ID WHERE DrinkID=%s",
                 [
-                    id
+                    classid
                 ]
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return None, 403
 
-    def delete(self, id):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
+    def delete(self, classid):
+        if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
-            flagID = request.form['FLAGID']
+            flagid = request.form['FLAGID']
             cursor.execute(
                 "DELETE FROM Drink_Flags WHERE DrinkID=%s AND FlagID=%s",
                 [
-                    id,
-                    flagID
+                    classid,
+                    flagid
                 ]
             )
             cursor.execute(
                 "SELECT ID, Text FROM Flags JOIN Drink_Flags ON FlagID=ID WHERE DrinkID=%s",
                 [
-                    id
+                    classid
                 ]
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return None, 403
 
 
-api.add_resource(DrinkFlag, *["/drink/<int:id>/flag"])
+# noinspection PyTypeChecker
+api.add_resource(DrinkFlag, *["/drink/<int:classid>/flag"])
 
 
+# noinspection PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic
 class Ingredient(Resource):
     def get(self):
         cursor = mysql.connection.cursor()
@@ -443,8 +465,7 @@ class Ingredient(Resource):
         return jsonify(cursor.fetchall())
 
     def post(self):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
+        if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
             name = request.form['NAME']
             cursor.execute(
@@ -456,219 +477,636 @@ class Ingredient(Resource):
             cursor.execute(
                 "SELECT * FROM Ingredients"
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return None, 403
 
-    def put(self, id):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
+    def put(self, classid):
+        if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
             name = request.form['NAME']
             cursor.execute(
                 "UPDATE Ingredients SET Name=%s WHERE ID=%s",
                 [
                     name,
-                    id
+                    classid
                 ]
             )
             cursor.execute(
                 "SELECT * FROM Ingredients"
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return None, 403
 
-    def delete(self, id):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
+    def delete(self, classid):
+        if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
             cursor.execute(
                 "DELETE FROM Drink_Ingredients WHERE IngredientID=%s",
                 [
-                    id
+                    classid
                 ]
             )
             cursor.execute(
                 "DELETE FROM Ingredients WHERE ID=%s",
                 [
-                    id
+                    classid
                 ]
             )
             cursor.execute(
                 "SELECT * FROM Ingredients"
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return None, 403
 
 
-api.add_resource(Ingredient, *["/ingredient", "/ingredient/<int:id>"])
+# noinspection PyTypeChecker
+api.add_resource(Ingredient, *["/ingredient", "/ingredient/<int:classid>"])
 
 
+# noinspection PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic
 class DrinkIngredient(Resource):
-    def get(self, id):
+    def get(self, classid):
         cursor = mysql.connection.cursor()
         cursor.execute(
             "SELECT Ingredient.ID, Ingredient.Name, Drink_Ingredients.Amount, Measurements.Name, Measurements.Unit, "
             "Measurements.Multiplier FROM Ingredients JOIN Drink_Ingredients ON IngredientID=Ingredients.ID JOIN "
             "Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID WHERE DrinkID=%s",
             [
-                id
+                classid
             ]
         )
         return jsonify(cursor.fetchall())
 
-    def post(self, id):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
+    def post(self, classid):
+        if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
-            ingredientID = request.form['INGREDIENTID']
-            measurementID = request.form['MEASUREMENTID']
+            ingredientid = request.form['INGREDIENTID']
+            measurementid = request.form['MEASUREMENTID']
             amount = request.form['AMOUNT']
             cursor.execute(
                 "INSERT INTO Drink_Ingredients(DrinkID, IngredientID, MeasurementID, Amount) VALUES (%s,%s,%s,%s)",
                 [
-                    id,
-                    ingredientID,
-                    measurementID,
+                    classid,
+                    ingredientid,
+                    measurementid,
                     amount
                 ]
             )
             cursor.execute(
-                "SELECT Ingredient.ID, Ingredient.Name, Drink_Ingredients.Amount, Measurements.Name, Measurements.Unit, "
-                "Measurements.Multiplier FROM Ingredients JOIN Drink_Ingredients ON IngredientID=Ingredients.ID JOIN "
-                "Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID WHERE DrinkID=%s",
+                "SELECT Ingredient.ID, Ingredient.Name, Drink_Ingredients.Amount, Measurements.Name, "
+                "Measurements.Unit, Measurements.Multiplier FROM Ingredients JOIN Drink_Ingredients "
+                "ON IngredientID=Ingredients.ID JOIN Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID "
+                "WHERE DrinkID=%s",
                 [
-                    id
+                    classid
                 ]
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return None, 403
 
-    def put(self, id, ingredientID):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
+    def put(self, classid, ingredientid):
+        if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
-            measurementID = request.form['MEASUREMENTID']
+            measurementid = request.form['MEASUREMENTID']
             amount = request.form['AMOUNT']
             cursor.execute(
                 "UPDATE Drink_Ingredients SET IngredientID=%s, MeasurementID=%s, Amount=%s WHERE DrinkID=%s "
                 "AND IngredientID=%s",
                 [
-                    ingredientID,
-                    measurementID,
+                    ingredientid,
+                    measurementid,
                     amount,
-                    id,
-                    ingredientID
+                    classid,
+                    ingredientid
                 ]
             )
             cursor.execute(
-                "SELECT Ingredient.ID, Ingredient.Name, Drink_Ingredients.Amount, Measurements.Name, Measurements.Unit, "
-                "Measurements.Multiplier FROM Ingredients JOIN Drink_Ingredients ON IngredientID=Ingredients.ID JOIN "
-                "Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID WHERE DrinkID=%s",
+                "SELECT Ingredient.ID, Ingredient.Name, Drink_Ingredients.Amount, Measurements.Name, "
+                "Measurements.Unit, Measurements.Multiplier FROM Ingredients JOIN Drink_Ingredients "
+                "ON IngredientID=Ingredients.ID JOIN Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID "
+                "WHERE DrinkID=%s",
                 [
-                    id
+                    classid
                 ]
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return None, 403
 
-    def delete(self, id, ingredientID):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
+    def delete(self, classid, ingredientid):
+        if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
             cursor.execute(
                 "DELETE FROM Drink_Ingredients WHERE DrinkID=%s AND IngredientID=%s",
                 [
-                    id,
-                    ingredientID
+                    classid,
+                    ingredientid
                 ]
             )
             cursor.execute(
-                "SELECT Ingredient.ID, Ingredient.Name, Drink_Ingredients.Amount, Measurements.Name, Measurements.Unit, "
-                "Measurements.Multiplier FROM Ingredients JOIN Drink_Ingredients ON IngredientID=Ingredients.ID JOIN "
-                "Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID WHERE DrinkID=%s",
+                "SELECT Ingredient.ID, Ingredient.Name, Drink_Ingredients.Amount, Measurements.Name, "
+                "Measurements.Unit, Measurements.Multiplier FROM Ingredients JOIN Drink_Ingredients ON "
+                "IngredientID=Ingredients.ID JOIN Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID "
+                "WHERE DrinkID=%s",
                 [
-                    id
+                    classid
                 ]
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return None, 403
 
 
-api.add_resource(DrinkIngredient, *["/drink/<int:id>/ingredient", "/drink/<int:id>/ingredient/<int:ingredientID>"])
+# noinspection PyTypeChecker
+api.add_resource(DrinkIngredient, *["/drink/<int:classid>/ingredient",
+                                    "/drink/<int:classid>/ingredient/<int:ingredientid>"])
 
 
+# noinspection PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic
 class DrinkStep(Resource):
-    def get(self, id):
+    def get(self, classid):
         cursor = mysql.connection.cursor()
         cursor.execute(
             "SELECT * FROM Drink_Steps WHERE DrinkID=%s",
             [
-                id
+                classid
             ]
         )
         return jsonify(cursor.fetchall())
 
-    def post(self, id):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
+    def post(self, classid):
+        if is_authenticated(request.form['AUTH']):
             text = request.form['TEXT']
             cursor = mysql.connection.cursor()
             cursor.execute(
                 "INSERT INTO Drink_Steps(DrinkID, Text) VALUES (%s,%s)",
                 [
-                    id,
+                    classid,
                     text
                 ]
             )
             cursor.execute(
                 "SELECT * FROM Drink_Steps WHERE DrinkID=%s",
                 [
-                    id
+                    classid
                 ]
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return None, 403
 
-    def put(self, id, stepID):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
+    def put(self, classid, stepid):
+        if is_authenticated(request.form['AUTH']):
             text = request.form['TEXT']
             cursor = mysql.connection.cursor()
             cursor.execute(
                 "UPDATE Drink_Steps SET Text=%s WHERE ID=%s",
                 [
                     text,
-                    stepID
+                    stepid
                 ]
             )
             cursor.execute(
                 "SELECT * FROM Drink_Steps WHERE DrinkID=%s",
                 [
-                    id
+                    classid
                 ]
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return None, 403
 
-    def delete(self, id, stepID):
-        auth = request.form['AUTH']
-        if is_authenticated(auth):
+    def delete(self, classid, stepid):
+        if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
             cursor.execute(
                 "DELETE FROM Drink_Steps WHERE ID=%s",
-                stepID
+                stepid
             )
             cursor.execute(
                 "SELECT * FROM Drink_Steps WHERE DrinkID=%s",
                 [
-                    id
+                    classid
                 ]
             )
+            mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return None, 403
 
 
-api.add_resource(DrinkStep, *["/drink/<int:id>/step", "/drink/<int:id>/step/<int:stepID>"])
+# noinspection PyTypeChecker
+api.add_resource(DrinkStep, *["/drink/<int:classid>/step", "/drink/<int:classid>/step/<int:stepid>"])
+
+
+# noinspection PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic
+class MeasurementType(Resource):
+    def get(self):
+        cursor = mysql.connection.cursor()
+        cursor.execute(
+            "SELECT * FROM Measurement_Types"
+        )
+        return jsonify(cursor.fetchall())
+
+    def post(self):
+        if is_authenticated(request.form['AUTH']):
+            cursor = mysql.connection.cursor()
+            text = request.form['TEXT']
+            cursor.execute(
+                "INSERT INTO Measurement_Types(Text) VALUES (%s)",
+                [
+                    text
+                ]
+            )
+            cursor.execute(
+                "SELECT * FROM Measurement_Types"
+            )
+            mysql.connection.commit()
+            return jsonify(cursor.fetchall())
+        return None, 403
+
+    def put(self, classid):
+        if is_authenticated(request.form['AUTH']):
+            cursor = mysql.connection.cursor()
+            text = request.form['TEXT']
+            cursor.execute(
+                "UPDATE Measurement_Types SET Text=%s WHERE ID=%s",
+                [
+                    text,
+                    classid
+                ]
+            )
+            cursor.execute(
+                "SELECT * FROM Measurement_Types"
+            )
+            mysql.connection.commit()
+            return jsonify(cursor.fetchall())
+        return None, 403
+
+    def delete(self, classid):
+        if is_authenticated(request.form['AUTH']):
+            cursor = mysql.connection.cursor()
+            cursor.execute(
+                "DELETE Drink_Ingredients FROM Drink_Ingredients JOIN Measurements ON MeasurementID=ID WHERE TypeID=%s",
+                [
+                    classid
+                ]
+            )
+            cursor.execute(
+                "DELETE FROM Measurements WHERE TypeID=%s",
+                [
+                    classid
+                ]
+            )
+            cursor.execute(
+                "DELETE FROM Measurement_Types WHERE ID=%s",
+                [
+                    classid
+                ]
+            )
+            cursor.execute(
+                "SELECT * FROM Measurement_Types"
+            )
+            mysql.connection.commit()
+            return jsonify(cursor.fetchall())
+        return None, 403
+
+
+# noinspection PyTypeChecker
+api.add_resource(MeasurementType, *["/measurement/type", "/measurement/type/<int:classid>"])
+
+
+# noinspection PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic
+class Measurement(Resource):
+    def get(self):
+        cursor = mysql.connection.cursor()
+        cursor.execute(
+            "SELECT * FROM Measurements"
+        )
+        return jsonify(cursor.fetchall())
+
+    def post(self):
+        if is_authenticated(request.form['AUTH']):
+            cursor = mysql.connection.cursor()
+            typeid = request.form['TYPEID']
+            name = request.form['NAME']
+            unit = request.form['UNIT']
+            multiplier = request.form['MULTIPLIER']
+            cursor.execute(
+                "INSERT INTO Measurements(TypeID, Name, Unit, Multiplier) VALUES (%s,%s,%s,%s)",
+                [
+                    typeid,
+                    name,
+                    unit,
+                    multiplier
+                ]
+            )
+            cursor.execute(
+                "SELECT * FROM Measurements"
+            )
+            mysql.connection.commit()
+            return jsonify(cursor.fetchall())
+        return None, 403
+
+    def put(self, classid):
+        if is_authenticated(request.form['AUTH']):
+            cursor = mysql.connection.cursor()
+            typeid = request.form['TYPEID']
+            name = request.form['NAME']
+            unit = request.form['UNIT']
+            multiplier = request.form['MULTIPLIER']
+            cursor.execute(
+                "UPDATE Measurements SET Name=%s,TypeID=%s,Unit=%s,Multiplier=%s WHERE ID=%s",
+                [
+                    name,
+                    typeid,
+                    unit,
+                    multiplier,
+                    classid
+                ]
+            )
+            cursor.execute(
+                "SELECT * FROM Measurements"
+            )
+            mysql.connection.commit()
+            return jsonify(cursor.fetchall())
+        return None, 403
+
+    def delete(self, classid):
+        if is_authenticated(request.form['AUTH']):
+            cursor = mysql.connection.cursor()
+            cursor.execute(
+                "DELETE FROM Measurements WHERE ID=%s",
+                [
+                    classid
+                ]
+            )
+            cursor.execute(
+                "SELECT * FROM Measurements"
+            )
+            mysql.connection.commit()
+            return jsonify(cursor.fetchall())
+        return None, 403
+
+
+# noinspection PyTypeChecker
+api.add_resource(Measurement, *["/measurement", "/measurement/<int:classid>"])
+
+
+# noinspection PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic
+class Skill(Resource):
+    def get(self):
+        cursor = mysql.connection.cursor()
+        cursor.execute(
+            "SELECT * FROM Skills"
+        )
+        return jsonify(cursor.fetchall())
+
+    def post(self):
+        if is_authenticated(request.form['AUTH']):
+            cursor = mysql.connection.cursor()
+            difficultyid = request.form['DIFFICULTYID']
+            name = request.form['NAME']
+            cursor.execute(
+                "INSERT INTO Skills(DifficultyID, Name) VALUES (%s, %s)",
+                [
+                    difficultyid,
+                    name
+                ]
+            )
+            cursor.execute(
+                "SELECT * FROM Skills"
+            )
+            mysql.connection.commit()
+            return jsonify(cursor.fetchall())
+        return None, 403
+
+    def put(self, classid):
+        if is_authenticated(request.form['AUTH']):
+            cursor = mysql.connection.cursor()
+            difficultyid = request.form['DIFFICULTYID']
+            name = request.form['NAME']
+            cursor.execute(
+                "UPDATE Skills SET Name=%s, DifficultyID=%s WHERE ID=%s",
+                [
+                    name,
+                    difficultyid,
+                    classid
+                ]
+            )
+            cursor.execute(
+                "SELECT * FROM Skills"
+            )
+            mysql.connection.commit()
+            return jsonify(cursor.fetchall())
+        return None, 403
+
+    def delete(self, classid):
+        if is_authenticated(request.form['AUTH']):
+            cursor = mysql.connection.cursor()
+            cursor.execute(
+                "DELETE FROM Skill_Steps WHERE SkillID=%s",
+                [
+                    classid
+                ]
+            )
+            cursor.execute(
+                "DELETE FROM Drink_Skills WHERE SkillID=%s",
+                [
+                    classid
+                ]
+            )
+            cursor.execute(
+                "DELETE FROM Skills WHERE ID=%s",
+                [
+                    classid
+                ]
+            )
+            cursor.execute(
+                "SELECT * FROM Skills"
+            )
+            mysql.connection.commit()
+            return jsonify(cursor.fetchall())
+        return None, 403
+
+
+# noinspection PyTypeChecker
+api.add_resource(Skill, *["/skill", "/skill/<int:classid>"])
+
+
+# noinspection PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic
+class SkillStep(Resource):
+    def get(self, classid):
+        cursor = mysql.connection.cursor()
+        cursor.execute(
+            "SELECT * FROM Skill_Steps WHERE SkillID=%s",
+            [
+                classid
+            ]
+        )
+        return jsonify(cursor.fetchall())
+
+    def post(self, classid):
+        if is_authenticated(request.form['AUTH']):
+            cursor = mysql.connection.cursor()
+            text = request.form['TEXT']
+            cursor.execute(
+                "INSERT INTO Skill_Steps(SkillID, Text) VALUES (%s,%s)",
+                [
+                    classid,
+                    text
+                ]
+            )
+            cursor.execute(
+                "SELECT * FROM Skill_Steps WHERE SkillID=%s",
+                [
+                    classid
+                ]
+            )
+            mysql.connection.commit()
+            return jsonify(cursor.fetchall())
+        return None, 403
+
+    def put(self, classid, stepid):
+        if is_authenticated(request.form['AUTH']):
+            cursor = mysql.connection.cursor()
+            text = request.form['TEXT']
+            cursor.execute(
+                "UPDATE Skill_Steps SET Text=%s WHERE ID=%s",
+                [
+                    text,
+                    stepid
+                ]
+            )
+            cursor.execute(
+                "SELECT * FROM Skill_Steps WHERE SkillID=%s",
+                [
+                    classid
+                ]
+            )
+            mysql.connection.commit()
+            return jsonify(cursor.fetchall())
+        return None, 403
+
+    def delete(self, classid, stepid):
+        if is_authenticated(request.form['AUTH']):
+            cursor = mysql.connection.cursor()
+            cursor.execute(
+                "DELETE FROM Skill_Steps WHERE ID=%s",
+                [
+                    stepid
+                ]
+            )
+            cursor.execute(
+                "SELECT * FROM Skill_Steps WHERE SkillID=%s",
+                [
+                    classid
+                ]
+            )
+            mysql.connection.commit()
+            return jsonify(cursor.fetchall())
+        return None, 403
+
+
+# noinspection PyTypeChecker
+api.add_resource(SkillStep, *["/skill/<int:classid>/step","/skill/<int:classid>/step/<int:stepid>"])
+
+
+class SkillDifficulty(Resource):
+    def get(self):
+        cursor = mysql.connection.cursor()
+        cursor.execute(
+            "SELECT * FROM Skill_Difficulty"
+        )
+        return jsonify(cursor.fetchall())
+
+    def post(self):
+        if is_authenticated(request.form['AUTH']):
+            cursor = mysql.connection.cursor()
+            text = request.form['TEXT']
+            cursor.execute(
+                "INSERT INTO Skill_Difficulty(Text) VALUES (%s)",
+                [
+                    text
+                ]
+            )
+            mysql.connection.commit()
+            cursor.execute(
+                "SELECT * FROM Skill_Difficulty"
+            )
+            return jsonify(cursor.fetchall())
+        return None, 403
+
+    def put(self, classid):
+        if is_authenticated(request.form['AUTH']):
+            cursor = mysql.connection.cursor()
+            text = request.form['TEXT']
+            cursor.execute(
+                "UPDATE Skill_Difficulty SET Text=%s WHERE ID=%s",
+                [
+                    text,
+                    classid
+                ]
+            )
+            mysql.connection.commit()
+            cursor.execute(
+                "SELECT * FROM Skill_Difficulty"
+            )
+            return jsonify(cursor.fetchall())
+        return None, 403
+
+    def delete(self, classid):
+        if is_authenticated(request.form['AUTH']):
+            cursor = mysql.connection.cursor()
+            cursor.execute(
+                "DELETE Drink_Skills FROM Drink_Skills JOIN Skills ON SkillID=ID WHERE DifficultyID=%s",
+                [
+                    classid
+                ]
+            )
+            cursor.execute(
+                "DELETE Skill_Steps FROM Skill_Steps JOIN Skills ON SkillID=ID WHERE DifficultyID=%s",
+                [
+                    classid
+                ]
+            )
+            cursor.execute(
+                "DELETE FROM Skills WHERE DifficultyID=%s",
+                [
+                    classid
+                ]
+            )
+            cursor.execute(
+                "DELETE FROM Skill_Difficulty WHERE ID=%s",
+                [
+                    classid
+                ]
+            )
+            mysql.connection.commit()
+            cursor.execute(
+                "SELECT * FROM Skill_Difficulty"
+            )
+            return jsonify(cursor.fetchall())
+        return None, 403
+
+api.add_resource(SkillDifficulty, *["/skill/difficulty", "/skill/difficulty/<int:classid>"])
+
+
+class DrinkSkill(Resource):
+    def get(self, drinkid):
+        cursor = mysql.connection.cursor()
+        cursor.execute(
+            "SELECT Skills.* FROM Drink_Skills JOIN Skills ON SkillID=ID WHERE DrinkID=%s",
+            [
+                drinkid
+            ]
+        )
+        return jsonify(cursor.fetchall())
+    def post(self, drinkid, classid):
+        pass
 
 if __name__ == "__main__":
     app.run(port=1997, debug=True)
