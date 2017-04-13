@@ -1106,7 +1106,45 @@ class DrinkSkill(Resource):
         )
         return jsonify(cursor.fetchall())
     def post(self, drinkid, classid):
-        pass
+        if is_authenticated(request.form['AUTH']):
+            cursor = mysql.connection.cursor()
+            cursor.execute(
+                "INSERT INTO Drink_Skills(DrinkID, SkillID) VALUES (%s,%s)",
+                [
+                    drinkid,
+                    classid
+                ]
+            )
+            mysql.connection.commit()
+            cursor.execute(
+                "SELECT Skills.* FROM Drink_Skills JOIN Skills ON SkillID=ID WHERE DrinkID=%s",
+                [
+                    drinkid
+                ]
+            )
+            return jsonify(cursor.fetchall())
+        return None, 403
+    def delete(self, drinkid, classid):
+        if is_authenticated(request.form['AUTH']):
+            cursor = mysql.connection.cursor()
+            cursor.execute(
+                "DELETE FROM Drink_Skills WHERE DrinkID=%s AND SkillID=%s",
+                [
+                    drinkid,
+                    classid
+                ]
+            )
+            mysql.connection.commit()
+            cursor.execute(
+                "SELECT Skills.* FROM Drink_Skills JOIN Skills ON SkillID=ID WHERE DrinkID=%s",
+                [
+                    drinkid
+                ]
+            )
+            return jsonify(cursor.fetchall())
+        return None, 403
+
+api.add_resource(DrinkSkill, *["/drink/<int:drinkid>/skill", "/drink/<int:drinkid>/skill/<int:classid>"])
 
 if __name__ == "__main__":
-    app.run(port=1997, debug=True)
+    app.run(port=1997)
