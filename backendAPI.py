@@ -187,13 +187,13 @@ api.add_resource(Drink, *["/drink", "/drink/<int:classid>"])
 
 class DrinkImage(Resource):
     def get(self, classid):
-        if os.path.isfile("/var/www/redir/drinKit/images/" + classid + ".png"):
-            return "http://46.101.52.91/drinKit/images/" + classid + ".png"
+        if os.path.isfile("/var/www/redir/drinKit/images/" + str(classid) + ".png"):
+            return "http://46.101.52.91/drinKit/images/" + str(classid) + ".png"
         return "http://46.101.52.91/drinKit/images/PlaceHolder.png"
 
     def put(self, classid):
         if is_authenticated(request.form['AUTH']):
-            image = open("/var/www/redir/drinKit/images/" + classid + ".png", "bw")
+            image = open("/var/www/redir/drinKit/images/" + str(classid) + ".png", "bw")
             image.write(request.files['IMAGE'])
             return None
         return None, 403
