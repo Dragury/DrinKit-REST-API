@@ -12,10 +12,14 @@ api = Api(app)
 app.config["MYSQL_DB"] = "drinKit"
 app.config["MYSQL_HOST"] = "127.0.0.1"
 app.config["MYSQL_CURSORCLASS"] = "DictCursor"
-app.config["MYSQL_USER"] = sys.argv[1]
-app.config["MYSQL_PASSWORD"] = sys.argv[2]
+app.config["MYSQL_USER"] = ""
+app.config["MYSQL_PASSWORD"] = ""
 mysql = MySQL(app)
 
+@app.after_request
+def add_xss(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
 
 def is_authenticated(auth):
     if auth is None:
