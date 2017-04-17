@@ -1,6 +1,6 @@
 import random
 import string
-import sys
+import os.path
 from datetime import datetime, timedelta
 
 from flask import Flask, jsonify, request
@@ -16,10 +16,12 @@ app.config["MYSQL_USER"] = ""
 app.config["MYSQL_PASSWORD"] = ""
 mysql = MySQL(app)
 
+
 @app.after_request
 def add_xss(response):
     response.headers['Access-Control-Allow-Origin'] = '*'
     return response
+
 
 def is_authenticated(auth):
     if auth is None:
@@ -181,6 +183,23 @@ class Drink(Resource):
 
 # noinspection PyTypeChecker
 api.add_resource(Drink, *["/drink", "/drink/<int:classid>"])
+
+
+class DrinkImage(Resource):
+    def get(self, classid):
+        if os.path.isfile("/var/www/redir/drinKit/images/" + classid + ".png"):
+            return "http://46.101.52.91/drinKit/images/" + classid + ".png"
+        return "http://46.101.52.91/drinKit/images/PlaceHolder.png"
+
+    def put(self, classid):
+        if is_authenticated(request.form['AUTH']):
+            image = open("/var/www/redir/drinKit/images/" + classid + ".png", "bw")
+            image.write(request.files['IMAGE'])
+            return None
+        return None, 403
+
+
+api.add_resource(DrinkImage, *["/drink/image/<int:classid>"])
 
 
 # noinspection PyMethodMayBeStatic
@@ -1016,7 +1035,7 @@ class SkillStep(Resource):
 
 
 # noinspection PyTypeChecker
-api.add_resource(SkillStep, *["/skill/<int:classid>/step","/skill/<int:classid>/step/<int:stepid>"])
+api.add_resource(SkillStep, *["/skill/<int:classid>/step", "/skill/<int:classid>/step/<int:stepid>"])
 
 
 class SkillDifficulty(Resource):
@@ -1096,6 +1115,7 @@ class SkillDifficulty(Resource):
             return jsonify(cursor.fetchall())
         return None, 403
 
+
 api.add_resource(SkillDifficulty, *["/skill/difficulty", "/skill/difficulty/<int:classid>"])
 
 
@@ -1109,6 +1129,7 @@ class DrinkSkill(Resource):
             ]
         )
         return jsonify(cursor.fetchall())
+
     def post(self, drinkid, classid):
         if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
@@ -1128,6 +1149,7 @@ class DrinkSkill(Resource):
             )
             return jsonify(cursor.fetchall())
         return None, 403
+
     def delete(self, drinkid, classid):
         if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
@@ -1147,6 +1169,7 @@ class DrinkSkill(Resource):
             )
             return jsonify(cursor.fetchall())
         return None, 403
+
 
 api.add_resource(DrinkSkill, *["/drink/<int:drinkid>/skill", "/drink/<int:drinkid>/skill/<int:classid>"])
 
