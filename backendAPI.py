@@ -424,7 +424,7 @@ class DrinkFlag(Resource):
     def get(self, classid):
         cursor = mysql.connection.cursor()
         cursor.execute(
-            "SELECT ID, Text FROM Flags JOIN Drink_Flags WHERE DrinkID=%s",
+            "SELECT ID, Text FROM Flags JOIN Drink_Flags ON FlagID=ID WHERE DrinkID=%s",
             [
                 classid
             ]
