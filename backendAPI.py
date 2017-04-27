@@ -708,7 +708,9 @@ class DrinkStep(Resource):
             cursor = mysql.connection.cursor()
             cursor.execute(
                 "DELETE FROM Drink_Steps WHERE ID=%s",
-                stepid
+                [
+                    stepid
+                ]
             )
             cursor.execute(
                 "SELECT * FROM Drink_Steps WHERE DrinkID=%s",
