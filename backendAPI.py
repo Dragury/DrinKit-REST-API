@@ -554,7 +554,7 @@ class DrinkIngredient(Resource):
     def get(self, classid):
         cursor = mysql.connection.cursor()
         cursor.execute(
-            "SELECT Ingredient.ID, Ingredient.Name, Drink_Ingredients.Amount, Measurements.Name, Measurements.Unit, "
+            "SELECT Ingredients.ID, Ingredients.Name, Drink_Ingredients.Amount, Measurements.Name, Measurements.Unit, "
             "Measurements.Multiplier FROM Ingredients JOIN Drink_Ingredients ON IngredientID=Ingredients.ID JOIN "
             "Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID WHERE DrinkID=%s",
             [
@@ -579,7 +579,7 @@ class DrinkIngredient(Resource):
                 ]
             )
             cursor.execute(
-                "SELECT Ingredient.ID, Ingredient.Name, Drink_Ingredients.Amount, Measurements.Name, "
+                "SELECT Ingredients.ID, Ingredients.Name, Drink_Ingredients.Amount, Measurements.Name, "
                 "Measurements.Unit, Measurements.Multiplier FROM Ingredients JOIN Drink_Ingredients "
                 "ON IngredientID=Ingredients.ID JOIN Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID "
                 "WHERE DrinkID=%s",
@@ -608,7 +608,7 @@ class DrinkIngredient(Resource):
                 ]
             )
             cursor.execute(
-                "SELECT Ingredient.ID, Ingredient.Name, Drink_Ingredients.Amount, Measurements.Name, "
+                "SELECT Ingredients.ID, Ingredients.Name, Drink_Ingredients.Amount, Measurements.Name, "
                 "Measurements.Unit, Measurements.Multiplier FROM Ingredients JOIN Drink_Ingredients "
                 "ON IngredientID=Ingredients.ID JOIN Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID "
                 "WHERE DrinkID=%s",
@@ -631,7 +631,7 @@ class DrinkIngredient(Resource):
                 ]
             )
             cursor.execute(
-                "SELECT Ingredient.ID, Ingredient.Name, Drink_Ingredients.Amount, Measurements.Name, "
+                "SELECT Ingredients.ID, Ingredients.Name, Drink_Ingredients.Amount, Measurements.Name, "
                 "Measurements.Unit, Measurements.Multiplier FROM Ingredients JOIN Drink_Ingredients ON "
                 "IngredientID=Ingredients.ID JOIN Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID "
                 "WHERE DrinkID=%s",
