@@ -809,7 +809,7 @@ class Measurement(Resource):
     def get(self):
         cursor = mysql.connection.cursor()
         cursor.execute(
-            "SELECT * FROM Measurements"
+            "SELECT * FROM Measurements ORDER BY Multiplier DESC"
         )
         return jsonify(cursor.fetchall())
 
