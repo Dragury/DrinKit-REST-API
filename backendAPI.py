@@ -554,9 +554,10 @@ class DrinkIngredient(Resource):
     def get(self, classid):
         cursor = mysql.connection.cursor()
         cursor.execute(
-            "SELECT Ingredients.ID, Ingredients.Name, Drink_Ingredients.Amount, Measurements.Name, Measurements.Unit, "
-            "Measurements.Multiplier FROM Ingredients JOIN Drink_Ingredients ON IngredientID=Ingredients.ID JOIN "
-            "Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID WHERE DrinkID=%s",
+            "SELECT Ingredients.ID, Ingredients.Name, Drink_Ingredients.Amount, Measurements.Name AS mName, "
+            "Measurements.Unit, Measurements.Multiplier, Measurements.TypeID FROM Ingredients JOIN Drink_Ingredients "
+            "ON IngredientID=Ingredients.ID JOIN Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID WHERE "
+            "DrinkID=%s",
             [
                 classid
             ]
@@ -579,10 +580,10 @@ class DrinkIngredient(Resource):
                 ]
             )
             cursor.execute(
-                "SELECT Ingredients.ID, Ingredients.Name, Drink_Ingredients.Amount, Measurements.Name, "
-                "Measurements.Unit, Measurements.Multiplier FROM Ingredients JOIN Drink_Ingredients "
-                "ON IngredientID=Ingredients.ID JOIN Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID "
-                "WHERE DrinkID=%s",
+                "SELECT Ingredients.ID, Ingredients.Name, Drink_Ingredients.Amount, Measurements.Name AS mName, "
+                "Measurements.Unit, Measurements.Multiplier, Measurements.TypeID FROM Ingredients JOIN Drink_Ingredients "
+                "ON IngredientID=Ingredients.ID JOIN Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID WHERE "
+                "DrinkID=%s",
                 [
                     classid
                 ]
@@ -608,10 +609,10 @@ class DrinkIngredient(Resource):
                 ]
             )
             cursor.execute(
-                "SELECT Ingredients.ID, Ingredients.Name, Drink_Ingredients.Amount, Measurements.Name, "
-                "Measurements.Unit, Measurements.Multiplier FROM Ingredients JOIN Drink_Ingredients "
-                "ON IngredientID=Ingredients.ID JOIN Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID "
-                "WHERE DrinkID=%s",
+                "SELECT Ingredients.ID, Ingredients.Name, Drink_Ingredients.Amount, Measurements.Name AS mName, "
+                "Measurements.Unit, Measurements.Multiplier, Measurements.TypeID FROM Ingredients JOIN Drink_Ingredients "
+                "ON IngredientID=Ingredients.ID JOIN Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID WHERE "
+                "DrinkID=%s",
                 [
                     classid
                 ]
@@ -631,10 +632,10 @@ class DrinkIngredient(Resource):
                 ]
             )
             cursor.execute(
-                "SELECT Ingredients.ID, Ingredients.Name, Drink_Ingredients.Amount, Measurements.Name, "
-                "Measurements.Unit, Measurements.Multiplier FROM Ingredients JOIN Drink_Ingredients ON "
-                "IngredientID=Ingredients.ID JOIN Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID "
-                "WHERE DrinkID=%s",
+                "SELECT Ingredients.ID, Ingredients.Name, Drink_Ingredients.Amount, Measurements.Name AS mName, "
+                "Measurements.Unit, Measurements.Multiplier, Measurements.TypeID FROM Ingredients JOIN Drink_Ingredients "
+                "ON IngredientID=Ingredients.ID JOIN Measurements ON Drink_Ingredients.MeasurementID=Measurements.ID WHERE "
+                "DrinkID=%s",
                 [
                     classid
                 ]
