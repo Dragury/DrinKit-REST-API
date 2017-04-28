@@ -84,7 +84,9 @@ api.add_resource(Authenticate, *["/auth", "/auth/<string:auth>"])
 class Drink(Resource):
     def get(self):
         cursor = mysql.connection.cursor()
-        cursor.execute("SELECT * FROM Drinks")
+        cursor.execute(
+            "SELECT * FROM Drinks ORDER BY ID"
+        )
         res = cursor.fetchall()
         return jsonify(res)
 
@@ -107,7 +109,7 @@ class Drink(Resource):
                 ]
             )
             cursor.execute(
-                "SELECT * FROM Drinks"
+                "SELECT * FROM Drinks ORDER BY ID"
             )
             mysql.connection.commit()
             return jsonify(cursor.fetchall())
@@ -131,7 +133,7 @@ class Drink(Resource):
                 ]
             )
             cursor.execute(
-                "SELECT * FROM Drinks"
+                "SELECT * FROM Drinks ORDER BY ID"
             )
             mysql.connection.commit()
             return jsonify(cursor.fetchall())
