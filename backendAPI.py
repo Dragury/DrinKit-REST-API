@@ -483,7 +483,7 @@ class Ingredient(Resource):
     def get(self):
         cursor = mysql.connection.cursor()
         cursor.execute(
-            "SELECT * FROM Ingredients"
+            "SELECT * FROM Ingredients ORDER BY Name"
         )
         return jsonify(cursor.fetchall())
 
