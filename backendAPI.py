@@ -218,7 +218,7 @@ api.add_resource(Type, "/type")
 class Equipment(Resource):
     def get(self):
         cursor = mysql.connection.cursor()
-        cursor.execute("SELECT * FROM Equipment")
+        cursor.execute("SELECT * FROM Equipment ORDER BY Text")
         return jsonify(cursor.fetchall())
 
     def post(self):
@@ -231,9 +231,7 @@ class Equipment(Resource):
                     text
                 ]
             )
-            cursor.execute(
-                "SELECT * FROM Equipment"
-            )
+            cursor.execute("SELECT * FROM Equipment ORDER BY Text")
             mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return jsonify(None), 403
@@ -249,9 +247,7 @@ class Equipment(Resource):
                     equipmentid
                 ]
             )
-            cursor.execute(
-                "SELECT * FROM Equipment"
-            )
+            cursor.execute("SELECT * FROM Equipment ORDER BY Text")
             mysql.connection.commit()
             return jsonify(cursor.fetchall())
         return jsonify(None), 403
@@ -271,6 +267,7 @@ class Equipment(Resource):
                     equipmentid
                 ]
             )
+            cursor.execute("SELECT * FROM Equipment ORDER BY Text")
             mysql.connection.commit()
             return None
         return None, 403
