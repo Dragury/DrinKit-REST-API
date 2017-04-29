@@ -195,8 +195,7 @@ class DrinkImage(Resource):
 
     def put(self, classid):
         if is_authenticated(request.form['AUTH']):
-            image = open("/var/www/redir/drinKit/images/" + str(classid) + ".png", "bw")
-            image.write(request.files['IMAGE'])
+            request.files['IMAGE'].save("/var/www/redir/drinKit/images/" + str(classid) + ".png")
             return None
         return None, 403
 
