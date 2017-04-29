@@ -472,7 +472,7 @@ class DrinkFlag(Resource):
 
 
 # noinspection PyTypeChecker
-api.add_resource(DrinkFlag, *["/drink/<int:classid>/flag","/drink/<int:classid>/flag/<ind:flagid>"])
+api.add_resource(DrinkFlag, *["/drink/<int:classid>/flag","/drink/<int:classid>/flag/<int:flagid>"])
 
 
 # noinspection PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic
