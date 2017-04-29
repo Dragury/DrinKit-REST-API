@@ -430,10 +430,9 @@ class DrinkFlag(Resource):
         )
         return jsonify(cursor.fetchall())
 
-    def post(self, classid):
+    def post(self, classid, flagid):
         if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
-            flagid = request.form['FLAGID']
             cursor.execute(
                 "INSERT INTO Drink_Flags(DrinkID, FlagID) VALUES (%s,%s)",
                 [
@@ -451,10 +450,9 @@ class DrinkFlag(Resource):
             return jsonify(cursor.fetchall())
         return None, 403
 
-    def delete(self, classid):
+    def delete(self, classid, flagid):
         if is_authenticated(request.form['AUTH']):
             cursor = mysql.connection.cursor()
-            flagid = request.form['FLAGID']
             cursor.execute(
                 "DELETE FROM Drink_Flags WHERE DrinkID=%s AND FlagID=%s",
                 [
@@ -474,7 +472,7 @@ class DrinkFlag(Resource):
 
 
 # noinspection PyTypeChecker
-api.add_resource(DrinkFlag, *["/drink/<int:classid>/flag"])
+api.add_resource(DrinkFlag, *["/drink/<int:classid>/flag","/drink/<int:classid>/flag/<ind:flagid>"])
 
 
 # noinspection PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic,PyMethodMayBeStatic
