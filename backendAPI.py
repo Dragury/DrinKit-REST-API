@@ -201,7 +201,7 @@ class DrinkImage(Resource):
         return None, 403
 
 
-api.add_resource(DrinkImage, *["/drink/image/<int:classid>"])
+api.add_resource(DrinkImage, *["/drink/<int:classid>/image"])
 
 
 # noinspection PyMethodMayBeStatic
